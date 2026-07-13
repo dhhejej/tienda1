@@ -1,8 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
-import { initDatabase } from '../database/sqlite';
-import { SqliteProductRepository } from '../database/SqliteProductRepository';
-import { SqliteOrderRepository } from '../database/SqliteOrderRepository';
+import { initDatabase } from '../database/mysql';
+import { MysqlProductRepository } from '../database/MysqlProductRepository';
+import { MysqlOrderRepository } from '../database/MysqlOrderRepository';
 import { createProductRouter } from './routes/productRoutes';
 import { createOrderRouter } from './routes/orderRoutes';
 
@@ -14,9 +15,9 @@ app.use(express.json());
 // Servir archivos estáticos del frontend
 app.use(express.static(path.resolve(__dirname, '../../../public')));
 
+const productRepository = new MysqlProductRepository();
+const orderRepository = new MysqlOrderRepository();
 
-const productRepository = new SqliteProductRepository();
-const orderRepository = new SqliteOrderRepository();
 
 app.use('/api/products', createProductRouter(productRepository));
 app.use('/api/orders', createOrderRouter(orderRepository, productRepository));
