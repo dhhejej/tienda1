@@ -83,7 +83,7 @@ function renderCatalog() {
         <h3>${escapeHtml(p.name)}</h3>
         <p class="product-desc">${escapeHtml(p.description)}</p>
         <div class="product-meta">
-          <span class="product-price">$${p.price.toLocaleString('es-CL')}</span>
+          <span class="product-price">$${p.price.toLocaleString('es-MX')} MXN</span>
           <span class="stock-status ${p.stock > 0 ? 'stock-in' : 'stock-out'}">
             ${p.stock > 0 ? `Stock: ${p.stock}` : 'Agotado'}
           </span>
@@ -208,7 +208,7 @@ function updateCartUI() {
     itemEl.innerHTML = `
       <div class="cart-item-info">
         <h4>${escapeHtml(item.productName)}</h4>
-        <p>$${item.price.toLocaleString('es-CL')} c/u • $${itemTotal.toLocaleString('es-CL')}</p>
+        <p>$${item.price.toLocaleString('es-MX')} MXN c/u • $${itemTotal.toLocaleString('es-MX')} MXN</p>
       </div>
       <div class="cart-item-actions">
         <button class="qty-btn" onclick="decreaseCartQty('${item.productId}')">-</button>
@@ -220,8 +220,8 @@ function updateCartUI() {
     cartItemsContainer.appendChild(itemEl);
   });
 
-  cartSubtotal.innerText = `$${subtotal.toLocaleString('es-CL')}`;
-  cartTotal.innerText = `$${subtotal.toLocaleString('es-CL')}`;
+  cartSubtotal.innerText = `$${subtotal.toLocaleString('es-MX')} MXN`;
+  cartTotal.innerText = `$${subtotal.toLocaleString('es-MX')} MXN`;
 }
 
 // Render Orders History
@@ -233,7 +233,7 @@ function renderOrders() {
   }
 
   orders.forEach(o => {
-    const dateStr = new Date(o.createdAt).toLocaleString('es-CL', {
+    const dateStr = new Date(o.createdAt).toLocaleString('es-MX', {
       year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
@@ -246,7 +246,7 @@ function renderOrders() {
       itemsHtml += `
         <div class="order-item-row">
           <span><span class="order-item-qty">${item.quantity}x</span> ${escapeHtml(item.productName)}</span>
-          <span>$${(item.price * item.quantity).toLocaleString('es-CL')}</span>
+          <span>$${(item.price * item.quantity).toLocaleString('es-MX')} MXN</span>
         </div>
       `;
     });
@@ -264,7 +264,7 @@ function renderOrders() {
       </div>
       <div class="order-total-row">
         <span>Total Pagado</span>
-        <span>$${o.total.toLocaleString('es-CL')}</span>
+        <span>$${o.total.toLocaleString('es-MX')} MXN</span>
       </div>
     `;
     ordersList.appendChild(card);
@@ -289,7 +289,7 @@ function togglePaymentModal(open) {
     drawerOverlay.classList.add('open');
     
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    payNowBtn.innerText = `Pagar $${subtotal.toLocaleString('es-CL')} y Confirmar Compra`;
+    payNowBtn.innerText = `Pagar $${subtotal.toLocaleString('es-MX')} MXN y Confirmar Compra`;
   } else {
     paymentModal.classList.remove('open');
     drawerOverlay.classList.remove('open');
@@ -518,7 +518,7 @@ function renderInventory() {
     tr.innerHTML = `
       <td><code>${escapeHtml(p.id)}</code></td>
       <td><strong>${escapeHtml(p.name)}</strong></td>
-      <td>$${p.price.toLocaleString('es-CL')}</td>
+      <td>$${p.price.toLocaleString('es-MX')} MXN</td>
       <td>${p.stock} uds</td>
       <td>
         <button class="delete-btn" onclick="deleteProduct('${p.id}')">Eliminar</button>

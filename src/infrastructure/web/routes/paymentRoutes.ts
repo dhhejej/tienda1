@@ -36,7 +36,7 @@ export function createPaymentRouter(
 
         lineItems.push({
           price_data: {
-            currency: 'usd',
+            currency: 'mxn',
             product_data: {
               name: product.name,
               description: product.description || undefined
@@ -60,7 +60,7 @@ export function createPaymentRouter(
         success_url: `${req.headers.origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.headers.origin}/cancel.html`,
         metadata: {
-          items: JSON.stringify(validatedItems) // Almacenar ítems en los metadatos para recuperarlos en el webhook
+          items: JSON.stringify(validatedItems)
         }
       });
 
