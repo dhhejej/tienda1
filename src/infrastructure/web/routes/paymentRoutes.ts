@@ -4,9 +4,7 @@ import { ProductRepository } from '../../../domain/repositories/ProductRepositor
 import { OrderRepository } from '../../../domain/repositories/OrderRepository';
 import { Order } from '../../../domain/entities/Order';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_key_to_prevent_crash', {
-  apiVersion: '2025-02-24-preview' as any // Stripe type bypass
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_key_to_prevent_crash');
 
 export function createPaymentRouter(
   productRepository: ProductRepository,
