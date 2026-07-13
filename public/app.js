@@ -21,6 +21,19 @@ const navCatalogBtn = document.getElementById('nav-catalog-btn');
 const navOrdersBtn = document.getElementById('nav-orders-btn');
 const navAdminBtn = document.getElementById('nav-admin-btn');
 
+// Elementos de la Pasarela de Pago
+const paymentModal = document.getElementById('payment-modal');
+const closePayment = document.getElementById('close-payment');
+const paymentForm = document.getElementById('payment-form');
+const cardNumberInput = document.getElementById('card-number');
+const cardHolderInput = document.getElementById('card-holder');
+const cardExpiryInput = document.getElementById('card-expiry');
+const cardCvvInput = document.getElementById('card-cvv');
+const previewNumber = document.getElementById('preview-number');
+const previewHolder = document.getElementById('preview-holder');
+const previewExpiry = document.getElementById('preview-expiry');
+const payNowBtn = document.getElementById('pay-now-btn');
+
 const catalogView = document.getElementById('catalog-view');
 const ordersView = document.getElementById('orders-view');
 const adminView = document.getElementById('admin-view');
@@ -201,6 +214,7 @@ function updateCartUI() {
         <button class="qty-btn" onclick="decreaseCartQty('${item.productId}')">-</button>
         <span class="qty-val">${item.quantity}</span>
         <button class="qty-btn" onclick="increaseCartQty('${item.productId}')">+</button>
+        <button class="remove-item-btn" onclick="removeFromCart('${item.productId}')">&times;</button>
       </div>
     `;
     cartItemsContainer.appendChild(itemEl);
@@ -268,51 +282,113 @@ function toggleCartDrawer(open) {
   }
 }
 
-// Confirm Purchase / Checkout
+// Open/Close Payment Modal
+function togglePaymentModal(open) {
+  if (open) {
+    paymentModal.classList.add('open');
+    drawerOverlay.classList.add('open');
+    
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    payNowBtn.innerText = `Pagar $${subtotal.toLocaleString('es-CL')} y Confirmar Compra`;
+  } else {
+    paymentModal.classList.remove('open');
+    drawerOverlay.classList.remove('open');
+    paymentForm.reset();
+    resetCardPreview();
+  }
+}
+
+function resetCardPreview() {
+  previewNumber.innerText = '•••• •••• •••• ••••';
+  previewHolder.innerText = 'NOMBRE COMPLETO';
+  previewExpiry.innerText = 'MM/AA';
+}
+
+// Confirm Purchase / Open Payment Gateway Modal
 async function checkout() {
   if (cart.length === 0) return;
+  toggleCartDrawer(false);
+  togglePaymentModal(true);
+}
 
-  checkoutBtn.disabled = true;
-  checkoutBtn.innerText = 'Procesando...';
+// Process Simulated Payment and Submit Order
+async function processPayment(e) {
+  e.preventDefault();
 
-  try {
-    const res = await fetch('/api/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        items: cart.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity
-        }))
-      })
-    });
+  const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+  const cardHolder = cardHolderInput.value.trim();
+  const cardExpiry = cardExpiryInput.value.trim();
+  const cardCvv = cardCvvInput.value.trim();
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Error procesando la orden');
-    }
-
-    showToast('¡Compra realizada con éxito!');
-    cart = [];
-    saveCart();
-    updateCartUI();
-    toggleCartDrawer(false);
-    
-    // Refresh catalog to update stock values
-    await fetchCatalog();
-    
-    // Switch to orders view to see checkout result
-    switchView('orders');
-  } catch (err) {
-    showToast(err.message || 'Error al confirmar compra');
-    console.error(err);
-  } finally {
-    checkoutBtn.innerText = 'Confirmar Compra';
-    checkoutBtn.disabled = false;
+  if (cardNumber.length !== 16 || isNaN(cardNumber)) {
+    showToast('El número de tarjeta debe tener 16 dígitos');
+    return;
   }
+  if (!cardHolder) {
+    showToast('Ingresa el nombre del titular');
+    return;
+  }
+  if (cardExpiry.length !== 5 || !cardExpiry.includes('/')) {
+    showToast('Fecha de expiración inválida (MM/AA)');
+    return;
+  }
+  if (cardCvv.length !== 3 || isNaN(cardCvv)) {
+    showToast('El CVV debe tener 3 dígitos');
+    return;
+  }
+
+  payNowBtn.disabled = true;
+  payNowBtn.innerText = 'Procesando Pago... 🔒';
+
+  setTimeout(async () => {
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error procesando la orden');
+      }
+
+      showToast('¡Pago Procesado y Compra Realizada con Éxito!');
+      cart = [];
+      saveCart();
+      updateCartUI();
+      togglePaymentModal(false);
+      
+      await fetchCatalog();
+      switchView('orders');
+    } catch (err) {
+      showToast(err.message || 'Error al procesar el pago');
+      console.error(err);
+    } finally {
+      payNowBtn.innerText = 'Pagar y Confirmar Compra';
+      payNowBtn.disabled = false;
+    }
+  }, 1500);
+}
+
+// Remove item completely from cart
+function removeFromCart(productId) {
+  const item = cart.find(i => i.productId === productId);
+  if (!item) return;
+
+  cart = cart.filter(i => i.productId !== productId);
+  saveCart();
+  updateCartUI();
+  renderCatalog();
+  showToast(`Removido del carrito: ${item.productName}`);
 }
 
 // Show Toast Alert
@@ -353,8 +429,46 @@ function switchView(viewName) {
 // Event Listeners
 cartToggle.addEventListener('click', () => toggleCartDrawer(true));
 closeCart.addEventListener('click', () => toggleCartDrawer(false));
-drawerOverlay.addEventListener('click', () => toggleCartDrawer(false));
+drawerOverlay.addEventListener('click', () => {
+  toggleCartDrawer(false);
+  togglePaymentModal(false);
+});
 checkoutBtn.addEventListener('click', checkout);
+closePayment.addEventListener('click', () => togglePaymentModal(false));
+paymentForm.addEventListener('submit', processPayment);
+
+// Formateadores e Interactividad de la Tarjeta de Crédito
+cardNumberInput.addEventListener('input', (e) => {
+  let value = e.target.value.replace(/\D/g, '');
+  let formatted = '';
+  for (let i = 0; i < value.length; i++) {
+    if (i > 0 && i % 4 === 0) {
+      formatted += ' ';
+    }
+    formatted += value[i];
+  }
+  e.target.value = formatted;
+  previewNumber.innerText = formatted || '•••• •••• •••• ••••';
+});
+
+cardHolderInput.addEventListener('input', (e) => {
+  let value = e.target.value.toUpperCase();
+  e.target.value = value;
+  previewHolder.innerText = value || 'NOMBRE COMPLETO';
+});
+
+cardExpiryInput.addEventListener('input', (e) => {
+  let value = e.target.value.replace(/\D/g, '');
+  if (value.length > 2) {
+    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+  }
+  e.target.value = value;
+  previewExpiry.innerText = value || 'MM/AA';
+});
+
+cardCvvInput.addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+});
 
 navCatalogBtn.addEventListener('click', () => switchView('catalog'));
 navOrdersBtn.addEventListener('click', () => switchView('orders'));
@@ -466,6 +580,7 @@ window.addToCart = addToCart;
 window.decreaseCartQty = decreaseCartQty;
 window.increaseCartQty = increaseCartQty;
 window.deleteProduct = deleteProduct;
+window.removeFromCart = removeFromCart;
 
 // Init
 fetchCatalog();

@@ -143,6 +143,62 @@
     </div>
   </div>
 
+  <!-- Payment Gateway Modal -->
+  <div class="payment-modal" id="payment-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Pasarela de Pago Segura</h3>
+        <button class="close-btn" id="close-payment">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Tarjeta de Crédito Virtual -->
+        <div class="credit-card-wrapper">
+          <div class="credit-card" id="credit-card-view">
+            <div class="card-front">
+              <div class="card-chip"></div>
+              <div class="card-number" id="preview-number">•••• •••• •••• ••••</div>
+              <div class="card-info-row">
+                <div class="card-holder-col">
+                  <span class="card-label">Titular</span>
+                  <div class="card-value" id="preview-holder">NOMBRE COMPLETO</div>
+                </div>
+                <div class="card-expiry-col">
+                  <span class="card-label">Vence</span>
+                  <div class="card-value" id="preview-expiry">MM/AA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de Pago -->
+        <form id="payment-form" class="admin-form">
+          <div class="form-group">
+            <label for="card-number">Número de Tarjeta</label>
+            <input type="text" id="card-number" maxlength="19" placeholder="4111 2222 3333 4444" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="card-holder">Nombre en la Tarjeta</label>
+            <input type="text" id="card-holder" placeholder="ej. JUAN PEREZ" required autocomplete="off" style="text-transform: uppercase;">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="card-expiry">Expiración (MM/AA)</label>
+              <input type="text" id="card-expiry" maxlength="5" placeholder="MM/AA" required autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="card-cvv">CVV</label>
+              <input type="text" id="card-cvv" maxlength="3" placeholder="123" required autocomplete="off">
+            </div>
+          </div>
+          <button type="submit" class="checkout-btn" id="pay-now-btn" style="margin-top: 1rem; width: 100%;">
+            Pagar y Confirmar Compra
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- Drawer Overlay -->
   <div class="drawer-overlay" id="drawer-overlay"></div>
 
