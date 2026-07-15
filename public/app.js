@@ -468,10 +468,10 @@ function switchView(viewName) {
   const token = localStorage.getItem('token');
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-  // Si no hay token de sesión, forzar la vista de login/registro
-  if (!token) {
+  // Si no hay token de sesión Y tampoco es administrador, forzar la vista de login/registro
+  if (!token && !isAdmin) {
     viewName = 'auth';
-  } else if (viewName === 'auth') {
+  } else if (viewName === 'auth' && token) {
     // Si ya está logueado y va a auth, mandarlo al catálogo
     viewName = 'catalog';
   }
@@ -680,29 +680,30 @@ function showRegisterForm() {
 
 // Iniciar Sesión / Cerrar Sesión Acción del Botón del Header
 function handleAuthAction() {
-  const token = localStorage.getItem('token');
-  if (token) {
-    // Cerrar sesión
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAdmin');
-    showToast('Sesión cerrada correctamente');
-    checkAuthStatus();
-    switchView('catalog');
-  } else {
-    switchView('auth');
-  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('isAdmin');
+  showToast('Sesión cerrada correctamente');
+  checkAuthStatus();
 }
 
 // Verificar el Estado de Autenticación
 function checkAuthStatus() {
+  // Procesar primero parámetros admin en URL
+  checkAdminAccess();
+
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-  if (token && userStr) {
+  if (isAdmin || (token && userStr)) {
     try {
-      const user = JSON.parse(userStr);
-      userDisplayName.innerText = `Hola, ${user.name}`;
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        userDisplayName.innerText = `Hola, ${user.name}`;
+      } else {
+        userDisplayName.innerText = `Hola, Servidor`;
+      }
       userDisplayName.style.display = 'inline';
       authLogoutBtn.style.display = 'inline-block';
       navAuthBtn.style.display = 'none';
@@ -711,13 +712,14 @@ function checkAuthStatus() {
       navCatalogBtn.style.display = 'inline-block';
       cartToggle.style.display = 'flex';
 
-      // Si el rol es admin, habilitar siempre botones del panel
-      if (user.role === 'admin') {
-        localStorage.setItem('isAdmin', 'true');
+      // Si es admin (por parámetro URL o rol en token), habilitar botones de administración
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (isAdmin || (user && user.role === 'admin')) {
         navOrdersBtn.style.display = 'inline-block';
         navAdminBtn.style.display = 'inline-block';
       } else {
-        checkAdminAccess();
+        navOrdersBtn.style.display = 'none';
+        navAdminBtn.style.display = 'none';
       }
       
       // Si la vista actual es la de auth, redirigir al catálogo
@@ -741,7 +743,6 @@ function checkAuthStatus() {
     navAdminBtn.style.display = 'none';
     cartToggle.style.display = 'none';
     
-    checkAdminAccess();
     switchView('auth');
   }
 }
