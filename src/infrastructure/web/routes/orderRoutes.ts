@@ -56,7 +56,7 @@ export function createOrderRouter(
 
   // Para el checkout simulado (offline)
   router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
-    if (process.env.DISABLE_PURCHASES !== 'false') {
+    if (process.env.DISABLE_PURCHASES === 'true') {
       return res.status(503).json({ error: 'Las compras están deshabilitadas temporalmente por mantenimiento.' });
     }
 
