@@ -33,11 +33,9 @@ const navOrdersBtn = document.getElementById('nav-orders-btn');
 const navAdminBtn = document.getElementById('nav-admin-btn');
 
 // Elementos de Autenticación
-const authModal = document.getElementById('auth-modal');
-const closeAuthModal = document.getElementById('close-auth-modal');
+const authView = document.getElementById('auth-view');
 const authActionBtn = document.getElementById('auth-action-btn');
 const userDisplayName = document.getElementById('user-display-name');
-const authModalTitle = document.getElementById('auth-modal-title');
 
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
@@ -335,7 +333,7 @@ async function checkout() {
   if (!token) {
     showToast('Inicia sesión para poder realizar tu compra.');
     toggleCartDrawer(false);
-    toggleAuthModal(true);
+    switchView('auth');
     return;
   }
 
@@ -469,13 +467,14 @@ function switchView(viewName) {
   const token = localStorage.getItem('token');
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-  if (viewName === 'orders' && !token) {
-    showToast('Inicia sesión para poder ver tu historial de compras.');
-    toggleAuthModal(true);
-    switchView('catalog');
-    return;
+  // Si no hay token, la única vista válida es 'auth'
+  if (!token) {
+    viewName = 'auth';
+  } else if (viewName === 'auth') {
+    // Si ya hay token, no mostramos el login sino el catálogo
+    viewName = 'catalog';
   }
-  
+
   if (viewName === 'admin' && !isAdmin) {
     showToast('Acceso restringido al administrador.');
     switchView('catalog');
@@ -485,22 +484,39 @@ function switchView(viewName) {
   navCatalogBtn.classList.remove('active');
   navOrdersBtn.classList.remove('active');
   navAdminBtn.classList.remove('active');
+  
+  authView.classList.remove('active');
   catalogView.classList.remove('active');
   ordersView.classList.remove('active');
   adminView.classList.remove('active');
 
-  if (viewName === 'catalog') {
-    navCatalogBtn.classList.add('active');
-    catalogView.classList.add('active');
-    fetchCatalog();
-  } else if (viewName === 'orders') {
-    navOrdersBtn.classList.add('active');
-    ordersView.classList.add('active');
-    fetchOrders();
-  } else if (viewName === 'admin') {
-    navAdminBtn.classList.add('active');
-    adminView.classList.add('active');
-    fetchCatalog();
+  const headerNav = document.querySelector('header nav');
+  const cartToggleBtn = document.getElementById('cart-toggle');
+  const userAuthSection = document.querySelector('.user-auth-section');
+
+  if (viewName === 'auth') {
+    authView.classList.add('active');
+    if (headerNav) headerNav.style.display = 'none';
+    if (cartToggleBtn) cartToggleBtn.style.display = 'none';
+    if (userAuthSection) userAuthSection.style.display = 'none';
+  } else {
+    if (headerNav) headerNav.style.display = 'flex';
+    if (cartToggleBtn) cartToggleBtn.style.display = 'flex';
+    if (userAuthSection) userAuthSection.style.display = 'flex';
+
+    if (viewName === 'catalog') {
+      navCatalogBtn.classList.add('active');
+      catalogView.classList.add('active');
+      fetchCatalog();
+    } else if (viewName === 'orders') {
+      navOrdersBtn.classList.add('active');
+      ordersView.classList.add('active');
+      fetchOrders();
+    } else if (viewName === 'admin') {
+      navAdminBtn.classList.add('active');
+      adminView.classList.add('active');
+      fetchCatalog();
+    }
   }
 }
 
@@ -510,7 +526,6 @@ closeCart.addEventListener('click', () => toggleCartDrawer(false));
 drawerOverlay.addEventListener('click', () => {
   toggleCartDrawer(false);
   togglePaymentModal(false);
-  toggleAuthModal(false);
 });
 checkoutBtn.addEventListener('click', checkout);
 closePayment.addEventListener('click', () => togglePaymentModal(false));
@@ -661,28 +676,13 @@ window.increaseCartQty = increaseCartQty;
 window.deleteProduct = deleteProduct;
 window.removeFromCart = removeFromCart;
 
-// Controlar Modal de Autenticación
-function toggleAuthModal(open) {
-  if (open) {
-    authModal.classList.add('open');
-    drawerOverlay.classList.add('open');
-  } else {
-    authModal.classList.remove('open');
-    drawerOverlay.classList.remove('open');
-    loginForm.reset();
-    registerForm.reset();
-    showLoginForm();
-  }
-}
-
+// Controlar cambio entre formularios en la vista principal de Auth
 function showLoginForm() {
-  authModalTitle.innerText = 'Iniciar Sesión';
   loginForm.style.display = 'block';
   registerForm.style.display = 'none';
 }
 
 function showRegisterForm() {
-  authModalTitle.innerText = 'Crear Cuenta';
   loginForm.style.display = 'none';
   registerForm.style.display = 'block';
 }
@@ -696,11 +696,9 @@ function handleAuthAction() {
     localStorage.removeItem('user');
     localStorage.removeItem('isAdmin');
     showToast('Sesión cerrada correctamente');
-    switchView('catalog');
     checkAuthStatus();
   } else {
-    // Abrir Modal de Inicio de Sesión
-    toggleAuthModal(true);
+    switchView('auth');
   }
 }
 
@@ -724,15 +722,22 @@ function checkAuthStatus() {
       } else {
         checkAdminAccess();
       }
+      
+      // Si la vista actual es la de auth, redirigir al catálogo
+      if (authView.classList.contains('active')) {
+        switchView('catalog');
+      }
     } catch (e) {
       console.error(e);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      switchView('auth');
     }
   } else {
     userDisplayName.style.display = 'none';
     authActionBtn.innerText = 'Iniciar Sesión';
     checkAdminAccess();
+    switchView('auth');
   }
 }
 
@@ -785,8 +790,7 @@ async function handleLoginSubmit(e) {
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     
-    showToast(`¡Bienvenido de nuevo, ${data.user.name}!`);
-    toggleAuthModal(false);
+    showToast(`¡Bienvenido, ${data.user.name}!`);
     checkAuthStatus();
   } catch (err) {
     showToast(err.message || 'Error de autenticación');
@@ -822,7 +826,6 @@ async function handleRegisterSubmit(e) {
 
 // Event Listeners de Autenticación
 authActionBtn.addEventListener('click', handleAuthAction);
-closeAuthModal.addEventListener('click', () => toggleAuthModal(false));
 goToRegisterBtn.addEventListener('click', (e) => {
   e.preventDefault();
   showRegisterForm();
