@@ -105,9 +105,14 @@
 
     <!-- View: Admin -->
     <section id="admin-view" class="view-section">
-      <div class="section-header">
-        <h2>Panel de Administración</h2>
-        <p>Añade nuevos productos al inventario o elimina productos existentes.</p>
+      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+        <div>
+          <h2>Panel de Administración</h2>
+          <p>Añade nuevos productos al inventario o elimina productos existentes.</p>
+        </div>
+        <button id="btn-export-sales" class="delete-btn" style="background: var(--accent-primary); border-color: var(--accent-primary); color: white; padding: 0.8rem 1.2rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit;">
+          Descargar Ventas (CSV)
+        </button>
       </div>
 
       <div class="admin-grid">

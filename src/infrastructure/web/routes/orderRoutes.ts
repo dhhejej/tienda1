@@ -95,5 +95,30 @@ export function createOrderRouter(
     }
   });
 
+  // API: Exportar todas las ventas a CSV
+  router.get('/export/csv', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+      }
+
+      const storeId = getStoreId(req);
+      const orders = await orderRepository.findAll(storeId);
+      
+      let csvContent = 'ID Pedido,ID Usuario,Fecha,Total,Estado,Productos\n';
+      
+      for (const order of orders) {
+        const productsList = order.items.map(i => `${i.productName} (x${i.quantity})`).join('; ');
+        csvContent += `"${order.id}","${order.userId}","${order.createdAt.toISOString()}",${order.total},"${order.status}","${productsList}"\n`;
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=ventas_reporte.csv');
+      res.status(200).send(csvContent);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return router;
 }

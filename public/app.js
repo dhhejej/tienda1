@@ -1054,6 +1054,36 @@ function renderUserOrders(orders) {
 // Exponer globalmente las funciones necesarias en onclick inline
 window.showUserOrders = showUserOrders;
 
+// Exportar reporte de ventas a CSV al hacer clic en el botón
+const btnExportSales = document.getElementById('btn-export-sales');
+if (btnExportSales) {
+  btnExportSales.addEventListener('click', async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/orders/export/csv', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        throw new Error('No se pudo descargar el reporte de ventas.');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reporte_ventas.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('Reporte de ventas descargado con éxito.');
+    } catch (e) {
+      showToast(e.message);
+      console.error(e);
+    }
+  });
+}
+
 // Init
 async function initApp() {
   await initStoreConfig();
