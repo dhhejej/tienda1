@@ -15,6 +15,10 @@ export function createPaymentRouter(
 
   // 1. Crear sesión de Checkout
   router.post('/create-checkout-session', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    if (process.env.DISABLE_PURCHASES !== 'false') {
+      return res.status(503).json({ error: 'Las compras están deshabilitadas temporalmente por mantenimiento.' });
+    }
+
     try {
       const { items } = req.body; // Array de { productId, quantity }
       if (!items || !Array.isArray(items) || items.length === 0) {
