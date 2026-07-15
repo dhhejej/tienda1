@@ -3,6 +3,7 @@ import { ManageOrders } from '../../../application/use-cases/ManageOrders';
 import { OrderRepository } from '../../../domain/repositories/OrderRepository';
 import { ProductRepository } from '../../../domain/repositories/ProductRepository';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { queryAll } from '../../database/mysql';
 
 export function createOrderRouter(
   orderRepository: OrderRepository,
@@ -61,6 +62,30 @@ export function createOrderRouter(
       res.status(201).json(order);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // API 1: Obtener Estadísticas del Servidor (Admin)
+  router.get('/stats/dashboard', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+      }
+
+      const ordersCount = await queryAll<any>('SELECT COUNT(*) as count FROM orders');
+      const revenue = await queryAll<any>('SELECT SUM(total) as sum FROM orders WHERE status = "PAID"');
+      const usersCount = await queryAll<any>('SELECT COUNT(*) as count FROM users');
+      const productsCount = await queryAll<any>('SELECT COUNT(*) as count FROM products');
+
+      res.json({
+        totalOrders: ordersCount[0]?.count || 0,
+        totalRevenue: parseFloat(revenue[0]?.sum || '0'),
+        totalUsers: usersCount[0]?.count || 0,
+        totalProducts: productsCount[0]?.count || 0
+      });
+    } catch (error: any) {
+      console.error('Error en estadísticas:', error);
+      res.status(500).json({ error: error.message || 'Error al obtener estadísticas.' });
     }
   });
 

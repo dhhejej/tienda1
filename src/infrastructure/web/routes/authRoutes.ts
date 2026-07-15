@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { UserRepository } from '../../../domain/repositories/UserRepository';
 import { User } from '../../../domain/entities/User';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/authMiddleware';
-import { queryAll } from '../../database/mysql';
+import { queryAll, runQuery } from '../../database/mysql';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_fallback_key';
 
@@ -94,6 +94,28 @@ export function createAuthRouter(userRepository: UserRepository): Router {
     } catch (error: any) {
       console.error('Error obteniendo usuarios:', error);
       res.status(500).json({ error: error.message || 'Error al obtener usuarios.' });
+    }
+  });
+
+  // API 2: Eliminar un Usuario Registrado (solo para Admin)
+  router.delete('/users/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Acceso denegado.' });
+      }
+
+      const userId = req.params.id;
+      // Validar que no se auto-elimine el administrador semilla
+      const user = await queryAll<any>('SELECT email FROM users WHERE id = ?', [userId]);
+      if (user.length > 0 && user[0].email === 'admin@tecnonova.com') {
+        return res.status(400).json({ error: 'No se puede eliminar la cuenta principal de administrador.' });
+      }
+
+      await runQuery('DELETE FROM users WHERE id = ?', [userId]);
+      res.json({ success: true, message: 'Usuario eliminado correctamente.' });
+    } catch (error: any) {
+      console.error('Error eliminando usuario:', error);
+      res.status(500).json({ error: error.message || 'Error al eliminar usuario.' });
     }
   });
 
