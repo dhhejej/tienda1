@@ -19,7 +19,7 @@ services:
       - key: DB_NAME
         value: defaultdb
       - key: DB_PORT
-        value: 3306
+        value: 25887
       - key: JWT_SECRET
         sync: false
       - key: STRIPE_SECRET_KEY
