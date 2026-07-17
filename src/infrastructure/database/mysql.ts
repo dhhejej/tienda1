@@ -43,17 +43,6 @@ export async function initDatabase(): Promise<void> {
     throw error;
   }
 
-  // Create tables in MySQL if they do not exist
-  await queryRun(`
-    CREATE TABLE IF NOT EXISTS users (
-      id VARCHAR(50) PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password VARCHAR(255) NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      role VARCHAR(50) NOT NULL DEFAULT 'customer'
-    )
-  `);
-
   await queryRun(`
     CREATE TABLE IF NOT EXISTS products (
       id VARCHAR(50) PRIMARY KEY,
@@ -73,29 +62,19 @@ export async function initDatabase(): Promise<void> {
     )
   `);
 
-  // Alter tables safely
+  // Alter tables safely to add user_id without FK
   try {
     await queryRun(`
-      ALTER TABLE orders ADD COLUMN user_id VARCHAR(50) NULL,
-      ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      ALTER TABLE orders ADD COLUMN user_id VARCHAR(50) NULL
     `);
-    console.log('Columna user_id y restricción de FK añadidas a la tabla orders.');
+    console.log('Columna user_id añadida a la tabla orders.');
   } catch (error: any) {
-    if (!error.message.includes('Duplicate column name') && !error.message.includes('already exists') && !error.message.includes('duplicate key')) {
+    if (!error.message.includes('Duplicate column name') && !error.message.includes('already exists')) {
       console.warn('Advertencia al alterar la tabla orders:', error.message);
     }
   }
 
   // Alter tables safely to add store_id
-  try {
-    await queryRun("ALTER TABLE users ADD COLUMN store_id VARCHAR(50) NOT NULL DEFAULT 'tienda1'");
-    console.log("Columna store_id añadida a la tabla users.");
-  } catch (e: any) {
-    if (!e.message.includes('Duplicate column name') && !e.message.includes('already exists')) {
-      console.warn("Advertencia al alterar users:", e.message);
-    }
-  }
-
   try {
     await queryRun("ALTER TABLE products ADD COLUMN store_id VARCHAR(50) NOT NULL DEFAULT 'tienda1'");
     console.log("Columna store_id añadida a la tabla products.");
@@ -145,21 +124,6 @@ export async function initDatabase(): Promise<void> {
       await queryRun('INSERT INTO products (id, name, description, price, stock, store_id) VALUES (?, ?, ?, ?, ?, ?)', p);
     }
     console.log('Tablas inicializadas y productos semilla agregados en MySQL.');
-  }
-
-  // Seed default admin users for both stores
-  const userRows = await queryAll<{ count: number }>('SELECT COUNT(*) as count FROM users');
-  if (userRows && userRows[0] && userRows[0].count === 0) {
-    const adminPasswordHash = bcrypt.hashSync('adminpassword123', 10);
-    await queryRun(
-      'INSERT INTO users (id, email, password, name, role, store_id) VALUES (?, ?, ?, ?, ?, ?)',
-      ['user-admin-t1', 'admin@tecnonova.com', adminPasswordHash, 'Administrador TecnoNova T1', 'admin', 'tienda1']
-    );
-    await queryRun(
-      'INSERT INTO users (id, email, password, name, role, store_id) VALUES (?, ?, ?, ?, ?, ?)',
-      ['user-admin-t2', 'admin@tecnonova.com', adminPasswordHash, 'Administrador TecnoNova T2', 'admin', 'tienda2']
-    );
-    console.log('Usuarios Administradores creados para tienda1 y tienda2.');
   }
 }
 
